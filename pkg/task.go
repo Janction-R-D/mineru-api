@@ -107,11 +107,20 @@ func run(t Task) {
 		return
 	}
 
+	mdPath := fmt.Sprintf("%v/%v.md", t.Path, GetFileNameWithoutExt(t.FileName))
 	t.Status = TaskStatusSuccess
+	if !FileExists(mdPath) {
+		t.Status = TaskStatusFailed
+	}
 	t.Msg = msg
 	t.Path = outputPath
 	addTask(t)
 	return
+}
+
+func FileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil || !os.IsNotExist(err)
 }
 
 func ExecuteCommand(command string) (string, error) {
