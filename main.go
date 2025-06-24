@@ -28,7 +28,6 @@ func init() {
 
 func main() {
 	flag.Parse()
-	fmt.Println("debug", debug)
 	apiToken := os.Getenv("MINERU_API_TOKEN")
 	if apiToken != "" {
 		token = apiToken
