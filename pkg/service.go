@@ -1,7 +1,6 @@
 package pkg
 
 import (
-	"fmt"
 	"sync"
 	"time"
 
@@ -26,9 +25,12 @@ type Task struct {
 	CreateTime time.Time `json:"create_time"`
 	Path       string    `json:"path"`
 	FileName   string    `json:"file_name"`
+	MdPath     string    `json:"md_path"`
 }
 
-var taskMap struct {
+var taskMap taskMapStruct
+
+type taskMapStruct struct {
 	tasks map[string]Task
 	mutex sync.RWMutex
 }
@@ -58,11 +60,15 @@ type GetExtractTaskDetailResponse struct {
 type GetExtractTaskDetailResponseData struct {
 	TaskID string `json:"task_id"`
 	Status string `json:"status"`
+	Path   string `json:"path"`
+	MdPath string `json:"md_path"`
 }
 
 func GetExtractTaskDetail(id string) (resp GetExtractTaskDetailResponse, mdPath string, name string) {
 	t, ok := getTask(id)
 	resp.Data.TaskID = t.TaskId
+	resp.Data.Path = t.Path
+	resp.Data.MdPath = t.MdPath
 	if !ok {
 		resp.Code = 404
 		resp.Msg = "task not found"
@@ -76,10 +82,9 @@ func GetExtractTaskDetail(id string) (resp GetExtractTaskDetailResponse, mdPath 
 	}
 
 	if t.Status == TaskStatusSuccess {
-		mdPath = fmt.Sprintf("%v/%v.md", t.Path, GetFileNameWithoutExt(t.FileName))
 		resp.Code = 200
 		resp.Msg = t.Msg
-		return resp, mdPath, GetFileNameWithoutExt(t.FileName) + ".md"
+		return resp, t.MdPath, GetFileNameWithoutExt(t.FileName) + ".md"
 	}
 	resp.Code = 500
 	resp.Msg = t.Msg

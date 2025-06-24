@@ -55,7 +55,11 @@ const defaultPath = "/opt/parse"
 
 func Init(vlmSglangClientUrl string) {
 	_ = os.RemoveAll(defaultPath)
+	os.MkdirAll(defaultPath, 0777)
 	VlmSglangClientUrl = vlmSglangClientUrl
+	taskMap = taskMapStruct{
+		tasks: make(map[string]Task),
+	}
 
 	ticker := time.NewTicker(5 * time.Minute)
 	defer ticker.Stop()
@@ -89,31 +93,37 @@ func run(t Task) {
 
 	outputPath := fmt.Sprintf("%v/%v", defaultPath, t.TaskId)
 	os.MkdirAll(outputPath, 0777)
+	t.Path = outputPath
 
-	downloadCmd := fmt.Sprintf("wget -p %s %s", outputPath, t.Url)
+	downloadCmd := fmt.Sprintf("cd %s &&  wget  %s", outputPath, t.Url)
 	msg, err := ExecuteCommand(downloadCmd)
 	if err != nil {
 		t.Status = TaskStatusFailed
-		t.Msg = msg
+		t.Msg = err.Error()
+		addTask(t)
 		return
 	}
 
 	parseCmd := fmt.Sprintf("mineru -p %s/%s -o %v -b vlm-sglang-client -u %s", outputPath, t.FileName, outputPath, VlmSglangClientUrl)
 	msg, err = ExecuteCommand(parseCmd)
+	t.Msg = msg
 	if err != nil {
 		t.Status = TaskStatusFailed
-		t.Msg = msg
+		t.Msg = err.Error()
 		addTask(t)
 		return
 	}
-
-	mdPath := fmt.Sprintf("%v/%v.md", t.Path, GetFileNameWithoutExt(t.FileName))
+	mdPath := fmt.Sprintf("%v/%v/vlm/%v.md", t.Path, GetFileNameWithoutExt(t.FileName), GetFileNameWithoutExt(t.FileName))
 	t.Status = TaskStatusSuccess
 	if !FileExists(mdPath) {
 		t.Status = TaskStatusFailed
+		t.Msg = fmt.Sprintf("md not exist %v", mdPath)
+		t.Path = outputPath
+		t.MdPath = mdPath
+		addTask(t)
+		return
 	}
-	t.Msg = msg
-	t.Path = outputPath
+	t.MdPath = mdPath
 	addTask(t)
 	return
 }
@@ -125,7 +135,6 @@ func FileExists(path string) bool {
 
 func ExecuteCommand(command string) (string, error) {
 	cmd := exec.Command("bash", "-c", command)
-
 	var stdoutBuf, stderrBuf bytes.Buffer
 	cmd.Stdout = &stdoutBuf
 	cmd.Stderr = &stderrBuf
@@ -137,10 +146,6 @@ func ExecuteCommand(command string) (string, error) {
 
 	if err != nil {
 		return stdout, fmt.Errorf("exec cmd: %v,stderr : %s err %v", command, stderr, err.Error())
-	}
-
-	if stderr != "" {
-		return stderr, fmt.Errorf("exec cmd: %v,stderr : %s ", command, stderr)
 	}
 
 	return stdout, nil

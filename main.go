@@ -23,11 +23,12 @@ func init() {
 	flag.BoolVar(&debug, "d", false, "debug mode")
 	flag.StringVar(&token, "t", "", "token")
 	flag.StringVar(&clientUrl, "u", "clientUrl", "clientUrl")
-	flag.StringVar(&port, "p", "9000", "start port")
+	flag.StringVar(&port, "p", "8888", "start port")
 }
 
 func main() {
 	flag.Parse()
+	fmt.Println("debug", debug)
 	apiToken := os.Getenv("MINERU_API_TOKEN")
 	if apiToken != "" {
 		token = apiToken
@@ -44,7 +45,7 @@ func main() {
 		gin.SetMode(gin.ReleaseMode)
 	}
 
-	pkg.Init(clientUrl)
+	go pkg.Init(clientUrl)
 	g := initAPIEngine()
 
 	endless.DefaultHammerTime = 5 * time.Second
@@ -91,8 +92,8 @@ func TokenCheck() gin.HandlerFunc {
 		if tokenString != token {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()
+			c.Next()
 			return
 		}
-		c.Next()
 	}
 }
