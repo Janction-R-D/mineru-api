@@ -21,8 +21,8 @@ var clientUrl = ""
 
 func init() {
 	flag.BoolVar(&debug, "d", false, "debug mode")
-	flag.StringVar(&token, "t", "", "token")
-	flag.StringVar(&clientUrl, "u", "clientUrl", "clientUrl")
+	flag.StringVar(&token, "t", "123456789", "token")
+	flag.StringVar(&clientUrl, "u", "http://127.0.0.1:30000", "clientUrl")
 	flag.StringVar(&port, "p", "8888", "start port")
 }
 
